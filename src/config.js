@@ -32,6 +32,13 @@ export const config = {
 
   // رقم هاتف البوت للربط عبر "رمز الاقتران" بدل QR (مناسب للاستضافة بدون شاشة).
   // بصيغة دولية بدون + وبدون أصفار بادئة، مثال: 9639xxxxxxxx
-  // اتركه فارغاً لاستخدام QR (سيُطبع في السجلّات).
+  // اتركه فارغاً لاستخدام QR (سيُطبع في السجلّات كرابط QR).
   pairingNumber: (process.env.PAIRING_NUMBER || '').replace(/[^0-9]/g, ''),
+
+  // توكن بوت تلجرام (من @BotFather). اتركه فارغاً لتعطيل لوحة تلجرام.
+  telegramToken: (process.env.TELEGRAM_TOKEN || '').trim(),
+
+  // معرّفات مستخدمي تلجرام المصرّح لهم باستخدام اللوحة (مفصولة بفواصل).
+  // احصل على معرّفك من @userinfobot. اتركه فارغاً للسماح للجميع (غير موصى به).
+  telegramAdminIds: parseList(process.env.TELEGRAM_ADMIN_ID),
 };

@@ -17,6 +17,7 @@ import qrcode from 'qrcode-terminal';
 
 import { config } from './config.js';
 import { createDb } from './db.js';
+import { createTelegramBot } from './telegram.js';
 import {
   normId,
   jidToDisplay,
@@ -35,7 +36,11 @@ function isGroupAllowed(groupId) {
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(config.authFolder);
+
+  // نجيب أحدث نسخة واتساب ويب مباشرةً من واتساب لتفادي رفض الربط بسبب نسخة قديمة،
+  // ونرجع للنسخة المضمّنة في المكتبة كحل احتياطي إن فشل الجلب.
   const { version } = await fetchLatestWaWebVersion({}).catch(() => fetchLatestBaileysVersion());
+  console.log('📦 نسخة واتساب ويب المستخدمة:', version?.join('.'));
 
   // نستخدم رمز الاقتران إذا حُدّد رقم البوت ولم تُسجَّل الجلسة بعد.
   const usePairingCode = Boolean(config.pairingNumber) && !state.creds.registered;
@@ -125,6 +130,14 @@ async function startBot() {
       if (selfJoin && !config.countInviteLinkJoins) continue;
 
       db.recordAdd(groupId, adderId, addedId, adderDisplay);
+    }
+
+    // خزّن اسم المجموعة لعرضه في لوحة تلجرام (مرة عند غيابه فقط لتفادي الضغط).
+    if (!db.getGroupName(groupId)) {
+      sock
+        .groupMetadata(groupId)
+        .then((meta) => db.upsertGroupName(groupId, meta?.subject))
+        .catch(() => {});
     }
   }
 
@@ -250,6 +263,17 @@ function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
+// ==== تشغيل لوحة تلجرام (مرة واحدة، مستقلة عن اتصال واتساب) ====
+const tgBot = createTelegramBot(db, config);
+if (tgBot) {
+  tgBot
+    .start({
+      onStart: (info) => console.log(`✅ لوحة تلجرام تعمل: @${info.username}`),
+    })
+    .catch((err) => console.error('فشل تشغيل لوحة تلجرام:', err?.message || err));
+}
+
+// ==== تشغيل عميل واتساب ====
 startBot().catch((err) => {
   console.error('فشل بدء تشغيل البوت:', err);
   process.exit(1);

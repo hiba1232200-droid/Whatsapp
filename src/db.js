@@ -38,6 +38,13 @@ export function createDb(dbPath) {
       added_id     TEXT NOT NULL,
       created_at   INTEGER NOT NULL
     );
+
+    -- أسماء مجموعات واتساب (للعرض في لوحة تلجرام)
+    CREATE TABLE IF NOT EXISTS wa_groups (
+      group_id   TEXT PRIMARY KEY,
+      name       TEXT,
+      updated_at INTEGER
+    );
   `);
 
   // زيادة عداد الإضافة لعضو معيّن (عملية ذرّية عبر UPSERT)
@@ -83,6 +90,27 @@ export function createDb(dbPath) {
     )
   `);
 
+  const upsertGroupStmt = db.prepare(`
+    INSERT INTO wa_groups (group_id, name, updated_at)
+    VALUES (@groupId, @name, @now)
+    ON CONFLICT(group_id) DO UPDATE SET name = @name, updated_at = @now
+  `);
+
+  // قائمة المجموعات المتتبَّعة مع اسمها وإجمالي الإضافات (للوحة تلجرام)
+  const groupsStmt = db.prepare(`
+    SELECT s.group_id                         AS group_id,
+           COALESCE(g.name, s.group_id)       AS name,
+           SUM(s.adds_count)                  AS total_adds,
+           COUNT(*)                           AS members,
+           MAX(s.last_add_at)                 AS last_add_at
+    FROM add_stats s
+    LEFT JOIN wa_groups g ON g.group_id = s.group_id
+    GROUP BY s.group_id
+    ORDER BY total_adds DESC
+  `);
+
+  const groupNameStmt = db.prepare(`SELECT name FROM wa_groups WHERE group_id = ?`);
+
   return {
     raw: db,
 
@@ -103,6 +131,22 @@ export function createDb(dbPath) {
       if (!row) return { count: 0, rank: null };
       const rankRow = rankStmt.get(groupId, groupId, participantId);
       return { count: row.adds_count, rank: (rankRow?.ahead ?? 0) + 1 };
+    },
+
+    // حفظ/تحديث اسم مجموعة واتساب
+    upsertGroupName(groupId, name) {
+      if (!name) return;
+      upsertGroupStmt.run({ groupId, name, now: Date.now() });
+    },
+
+    // اسم المجموعة المخزّن (أو null)
+    getGroupName(groupId) {
+      return groupNameStmt.get(groupId)?.name ?? null;
+    },
+
+    // كل المجموعات المتتبَّعة (للوحة تلجرام)
+    getGroups() {
+      return groupsStmt.all();
     },
 
     close() {
