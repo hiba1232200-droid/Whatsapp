@@ -8,6 +8,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion,
+  fetchLatestWaWebVersion,
   isJidGroup,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
@@ -34,7 +35,7 @@ function isGroupAllowed(groupId) {
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(config.authFolder);
-  const { version } = await fetchLatestBaileysVersion();
+  const { version } = await fetchLatestWaWebVersion({}).catch(() => fetchLatestBaileysVersion());
 
   // نستخدم رمز الاقتران إذا حُدّد رقم البوت ولم تُسجَّل الجلسة بعد.
   const usePairingCode = Boolean(config.pairingNumber) && !state.creds.registered;
