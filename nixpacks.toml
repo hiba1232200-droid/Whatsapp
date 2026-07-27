@@ -1,0 +1,11 @@
+# إعداد بيئة البناء على Railway (Nixpacks)
+# نضمن Node 22 وأدوات بناء المكتبات الأصلية (better-sqlite3) عند الحاجة.
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm install --omit=dev"]
+
+[start]
+cmd = "npm start"

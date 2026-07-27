@@ -1,0 +1,20 @@
+{
+  "name": "wa-adds-leaderboard-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp group bot that ranks members by how many people they added to the group (Baileys + SQLite)",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "^6.7.9",
+    "better-sqlite3": "^11.8.1",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
