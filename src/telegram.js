@@ -79,7 +79,8 @@ export function createTelegramBot(db, config) {
     const medals = ['🥇', '🥈', '🥉'];
     const lines = rows.map((r, i) => {
       const rank = medals[i] || `${i + 1}.`;
-      const label = r.display_name || jidToDisplay(r.participant_id);
+      // الاسم المخزّن ← الاسم المتعلَّم من الرسائل ← الرقم/المعرّف الداخلي
+      const label = r.display_name || db.getName(r.participant_id) || jidToDisplay(r.participant_id);
       return `${rank} ${label} — ${r.adds_count} إضافة`;
     });
     return ctx.reply(`🏆 ترتيب أكثر الأعضاء إضافةً\nالمجموعة: ${target.name}\n\n${lines.join('\n')}`);

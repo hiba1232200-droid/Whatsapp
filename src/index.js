@@ -116,7 +116,7 @@ async function startBot() {
   });
 
   function handleParticipantsUpdate(update) {
-    const { id: groupId, action, participants = [], author, authorPn } = update;
+    const { id: groupId, action, participants = [], author, authorPn, authorUsername } = update;
 
     if (action !== 'add') return;          // نهتم بالإضافة فقط
     if (!isGroupAllowed(groupId)) return;
@@ -127,7 +127,9 @@ async function startBot() {
       return;
     }
 
-    const adderDisplay = jidToDisplay(authorPn || author);
+    // نفضّل عرض الاسم (إن توفّر)، ثم الرقم الحقيقي، وأخيراً المعرّف الداخلي.
+    const adderDisplay =
+      authorUsername || db.getName(adderId) || jidToDisplay(authorPn || author);
 
     for (const p of participants) {
       const addedId = participantId(p);
@@ -155,6 +157,14 @@ async function startBot() {
     if (type !== 'notify') return;
 
     for (const msg of messages) {
+      // نتعلّم اسم المُرسِل (pushName) لعرضه في اللوحة بدل المعرّف الداخلي.
+      // نخزّنه تحت صيغتي المعرّف (الرقم و LID) لضمان المطابقة لاحقاً.
+      if (msg.pushName && !msg.key?.fromMe) {
+        const pn = normId(msg.key?.participantPn);
+        const lid = normId(msg.key?.participant);
+        if (pn) db.rememberName(pn, msg.pushName);
+        if (lid) db.rememberName(lid, msg.pushName);
+      }
       try {
         await handleMessage(sock, msg);
       } catch (err) {

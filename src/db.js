@@ -45,6 +45,13 @@ export function createDb(dbPath) {
       name       TEXT,
       updated_at INTEGER
     );
+
+    -- أسماء الأعضاء (تُلتقط من رسائلهم) لعرضها بدل المعرّف الداخلي عند إخفاء الرقم
+    CREATE TABLE IF NOT EXISTS wa_names (
+      participant_id TEXT PRIMARY KEY,
+      name           TEXT,
+      updated_at     INTEGER
+    );
   `);
 
   // زيادة عداد الإضافة لعضو معيّن (عملية ذرّية عبر UPSERT)
@@ -111,6 +118,14 @@ export function createDb(dbPath) {
 
   const groupNameStmt = db.prepare(`SELECT name FROM wa_groups WHERE group_id = ?`);
 
+  const rememberNameStmt = db.prepare(`
+    INSERT INTO wa_names (participant_id, name, updated_at)
+    VALUES (@id, @name, @now)
+    ON CONFLICT(participant_id) DO UPDATE SET name = @name, updated_at = @now
+  `);
+
+  const getNameStmt = db.prepare(`SELECT name FROM wa_names WHERE participant_id = ?`);
+
   return {
     raw: db,
 
@@ -142,6 +157,17 @@ export function createDb(dbPath) {
     // اسم المجموعة المخزّن (أو null)
     getGroupName(groupId) {
       return groupNameStmt.get(groupId)?.name ?? null;
+    },
+
+    // حفظ اسم عضو (نتعلّمه من رسائله)
+    rememberName(participantId, name) {
+      if (!participantId || !name) return;
+      rememberNameStmt.run({ id: participantId, name, now: Date.now() });
+    },
+
+    // اسم عضو مخزّن (أو null)
+    getName(participantId) {
+      return getNameStmt.get(participantId)?.name ?? null;
     },
 
     // كل المجموعات المتتبَّعة (للوحة تلجرام)
