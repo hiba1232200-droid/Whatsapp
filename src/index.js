@@ -77,7 +77,16 @@ async function startBot() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log('\n📱 امسح رمز QR التالي من واتساب > الأجهزة المرتبطة:\n');
+      // نطبع رابطاً يعرض رمز QR نظيفاً (يُفتح على شاشة ثانية ويُمسح من الهاتف).
+      const qrUrl =
+        'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=15&data=' +
+        encodeURIComponent(qr);
+      console.log('\n📱 لربط واتساب عبر QR:');
+      console.log('افتح الرابط التالي على شاشة ثانية (كمبيوتر/جهاز آخر)، ثم امسح الرمز من: واتساب > الأجهزة المرتبطة > ربط جهاز');
+      console.log('===================== QR-LINK =====================');
+      console.log(qrUrl);
+      console.log('==================================================\n');
+      // نسخة نصية احتياطية (قد تكون غير واضحة في سجلّات الاستضافة)
       qrcode.generate(qr, { small: true });
     }
 
